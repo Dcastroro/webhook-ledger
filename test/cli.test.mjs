@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -63,5 +64,5 @@ test('CLI has no command that exports claims or lease credentials', t => {
 
 test('help and version work without opening a ledger', () => {
   assert.match(run(['--help']).stdout, /Usage:/);
-  assert.equal(run(['--version']).stdout.trim(), '0.1.0');
+  assert.equal(run(['--version']).stdout.trim(), JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version);
 });

@@ -1,8 +1,10 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs';
 import { open, lstat } from 'node:fs/promises';
 import { TextDecoder } from 'node:util';
 import { Ledger, LedgerError } from '../src/ledger.mjs';
-const HELP = `Webhook Ledger 0.1.0
+const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+const HELP = `Webhook Ledger ${VERSION}
 
 Usage: node bin/webhook-ledger.mjs <init|import|stats|list|requeue|prune> --db <file> [options]
 
@@ -73,7 +75,7 @@ let ledger;
 try {
   const options = args(process.argv.slice(2));
   if (options.help) console.log(HELP);
-  else if (options.version) console.log('0.1.0');
+  else if (options.version) console.log(VERSION);
   else {
     const eventIds = options.action === 'import' ? await ids(options.input) : undefined;
     ledger = new Ledger(options.db);

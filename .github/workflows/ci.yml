@@ -1,10 +1,14 @@
 name: CI
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   check:
     strategy:
@@ -23,5 +27,6 @@ jobs:
           node-version: ${{ matrix.node }}
           package-manager-cache: false
       - run: npm ci --ignore-scripts
+      - run: npm run repo:check
       - run: npm run check
       - run: npm run demo
