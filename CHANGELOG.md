@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2 — 2026-10-15
+
+- Add AbortSignal cancellation to bounded storage-busy backoff.
+- Prevent additional attempts after cancellation without copying abort reasons.
+- Preserve successful in-flight writes and unrelated storage errors.
+- Cover pre-cancellation, pending timers, exhaustion races and invalid signals.
+
 ## 0.1.1 — 2026-10-15
 
 - Add a bounded repository policy check with value-free diagnostics.

@@ -143,6 +143,11 @@ errors stay explicit. Total latency includes each operation's configured busy
 wait; keep that budget below the lease deadline. Existing ledger connections
 read settings without acquiring an unnecessary writer transaction.
 
+Pass an optional `signal` to cancel backoff and prevent further attempts;
+cancellation returns the fixed error `cancelled` without exposing abort reasons.
+An operation already in progress keeps its successful result, including a committed
+write. Synchronous SQLite busy waits are bounded by `busyMs` and are not interrupted.
+
 A failure schedules another attempt after the requested delay. At the attempt
 limit it becomes `dead`. `claim()` also recovers up to 1,000 expired leases per
 call, making them queued or dead according to the same limit. Recovery is
