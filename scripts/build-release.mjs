@@ -16,6 +16,8 @@ function rejectLinkedOutput(path, directory = false) {
 
 export function buildRelease(root, { tag } = {}) {
   root = resolve(root);
+  const output = resolve(root, '.release');
+  rejectLinkedOutput(output, true);
   if (git(root, ['status', '--porcelain', '--untracked-files=normal']).length) throw new Error('dirty-worktree');
   if (!checkRepository(root, { tag }).ok) throw new Error('repository-gate');
   const manifest = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
@@ -27,7 +29,6 @@ export function buildRelease(root, { tag } = {}) {
   const tar = git(root, ['archive', '--format=tar', `--prefix=${stem}/`, commit], 67108864);
   const bytes = gzipSync(tar, { level: 9 });
   const sha256 = createHash('sha256').update(bytes).digest('hex');
-  const output = resolve(root, '.release');
   rejectLinkedOutput(output, true);
   mkdirSync(output, { recursive: true });
   for (const name of [archive, 'SHA256SUMS', 'release-manifest.json', 'RELEASE_NOTES.md']) rejectLinkedOutput(resolve(output, name));
