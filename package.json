@@ -1,6 +1,6 @@
 {
   "name": "webhook-ledger",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A local SQLite receipt ledger for webhook deduplication, atomic leases and bounded retries, without storing event payloads.",
   "private": true,
   "type": "module",

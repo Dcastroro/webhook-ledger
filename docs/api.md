@@ -39,14 +39,22 @@ database message. Common codes: `usage`, `invalid-import`, `invalid-event-ids`,
 `invalid-receipt`, `invalid-options`, `invalid-path`, `invalid-clock`,
 `capacity`, `config-mismatch`, `lease-lost`, `not-terminal`, `closed`,
 `database-format`, `database-version`, `storage-busy`, `storage-capacity`,
-`storage-error`, `invalid-retry`.
+`storage-error`, `invalid-retry`, `cancelled`.
 
 `storage-busy` means the bounded lock wait was exhausted. The exported
-`withBusyRetry(operation, { attempts = 8, delayMs = 20, maxDelayMs = 250 })`
+`withBusyRetry(operation, { attempts = 8, delayMs = 20, maxDelayMs = 250, signal })`
 retries only that fixed error with capped exponential pauses. Attempts range
 from 1 to 32, delay from 1 to 1,000 ms, and maximum delay from the initial delay
 to 1,000 ms. Use it only around an individual ledger call, never an external
 business action. Other errors and retry exhaustion propagate unchanged.
+
+An optional `AbortSignal` cancels pending backoff and prevents the next operation
+from starting. A pre-aborted signal starts no operation. Cancellation throws
+`LedgerError('cancelled')` without copying the abort reason or cause. An already
+running operation is not interrupted: its successful result is returned, including
+a committed write, and its non-busy errors remain unchanged. The synchronous SQLite
+busy wait itself cannot be interrupted; bound it with `busyMs`. Invalid signal
+objects fail with `invalid-retry` before any operation runs.
 A reported successful commit
 is durable according to SQLite/host guarantees, but a process can crash after
 commit before the caller observes success. Re-recording the same retained ID
