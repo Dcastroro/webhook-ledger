@@ -113,6 +113,36 @@ The completion update checks receipt, ownership digest, state and expiry
 atomically. An old worker cannot complete a newer worker's lease. Completing a
 lease twice fails with `lease-lost`. Closing the ledger invalidates its handles.
 
+### Handle writer contention explicitly
+
+The API reports a fixed `storage-busy` code when its lock wait is exhausted.
+`withBusyRetry` provides opt-in, finite exponential backoff for **one ledger
+operation**, without retrying unrelated business side effects:
+
+```js
+import { Ledger, withBusyRetry } from './src/ledger.mjs';
+
+const ledger = await withBusyRetry(
+  () => new Ledger('./receipts.sqlite', { busyMs: 100 }),
+  { attempts: 32 }
+);
+try {
+  const leases = await withBusyRetry(() => ledger.claim({ limit: 10 }));
+  for (const lease of leases) {
+    // Perform your idempotent action separately.
+    await withBusyRetry(() => lease.complete());
+  }
+} finally {
+  ledger.close();
+}
+```
+
+Default backoff: 8 attempts, initial 20 ms delay, capped at 250 ms. Attempts
+are capped at 32; only `storage-busy` is retried. Capacity, expiry and other
+errors stay explicit. Total latency includes each operation's configured busy
+wait; keep that budget below the lease deadline. Existing ledger connections
+read settings without acquiring an unnecessary writer transaction.
+
 A failure schedules another attempt after the requested delay. At the attempt
 limit it becomes `dead`. `claim()` also recovers up to 1,000 expired leases per
 call, making them queued or dead according to the same limit. Recovery is

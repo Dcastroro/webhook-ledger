@@ -16,8 +16,11 @@ export class LedgerError extends Error {
   constructor(code) { super(code); this.name = 'LedgerError'; this.code = code; }
 }
 const fail = code => { throw new LedgerError(code); };
-const storageError = error => new LedgerError(error?.errcode === 5 || error?.errcode === 6 ? 'storage-busy'
-  : error?.errcode === 13 ? 'storage-capacity' : 'storage-error');
+const storageError = error => {
+  const code = Number.isInteger(error?.errcode) ? error.errcode & 0xff : 0;
+  return new LedgerError(code === 5 || code === 6 ? 'storage-busy' : code === 13 ? 'storage-capacity' : 'storage-error');
+};
+export { withBusyRetry } from './retry.mjs';
 
 class Lease {
   #finish;
@@ -72,7 +75,7 @@ export class Ledger {
       this.#db.exec('PRAGMA journal_mode=WAL;');
       if (this.#db.prepare('PRAGMA page_count').get().page_count > LIMITS.mainPages) fail('storage-capacity');
       this.#db.exec(`PRAGMA max_page_count=${LIMITS.mainPages};`);
-      this.#transaction(() => {
+      const initialize = () => {
         // Recheck under the writer lock: concurrent initializers may have won.
         const actual = this.#db.prepare('PRAGMA application_id').get().application_id;
         if (actual === 0) {
@@ -101,13 +104,15 @@ export class Ledger {
           this.#db.prepare('INSERT INTO settings VALUES (1,?,0,?,?,?)').run(randomBytes(32), requested.maxEntries, requested.maxAttempts, requested.leaseMs);
           this.#db.exec(`PRAGMA application_id=${APP_ID}; PRAGMA user_version=1;`);
         } else if (actual !== APP_ID || this.#db.prepare('PRAGMA user_version').get().user_version !== 1) fail('database-format');
-        const stored = this.#db.prepare('SELECT * FROM settings WHERE id=1').get();
-        this.#config = { maxEntries: stored.max_entries, maxAttempts: stored.max_attempts, leaseMs: stored.lease_ms };
-        this.#namespace = Buffer.from(stored.namespace);
-        for (const key of ['maxEntries', 'maxAttempts', 'leaseMs']) {
-          if (options[key] !== undefined && options[key] !== this.#config[key]) fail('config-mismatch');
-        }
-      });
+      };
+      // An existing ledger needs no write transaction just to read its settings.
+      if (app === 0) this.#transaction(initialize);
+      const stored = this.#db.prepare('SELECT * FROM settings WHERE id=1').get();
+      this.#config = { maxEntries: stored.max_entries, maxAttempts: stored.max_attempts, leaseMs: stored.lease_ms };
+      this.#namespace = Buffer.from(stored.namespace);
+      for (const key of ['maxEntries', 'maxAttempts', 'leaseMs']) {
+        if (options[key] !== undefined && options[key] !== this.#config[key]) fail('config-mismatch');
+      }
     } catch (error) {
       try { this.#db?.close(); } catch { /* Do not expose storage errors. */ }
       if (error instanceof LedgerError) throw error;

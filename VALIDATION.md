@@ -2,7 +2,7 @@
 
 Verified locally on 15 October 2026 with Windows and Node.js v24.20.0:
 
-- Syntax checks and all 25 tests pass, with none skipped.
+- Syntax checks and all 27 tests pass, with none skipped.
 - The in-memory lifecycle demo deduplicates one delivery, retries it and
   completes it without printing event data or lease ownership.
 - Four independent processes concurrently import overlapping deliveries:
@@ -15,6 +15,8 @@ Verified locally on 15 October 2026 with Windows and Node.js v24.20.0:
   complete cursor pagination.
 - Tests cover restart persistence, stale handles, deadline boundaries, delay,
   attempt limits, terminal requeue and bounded pruning.
+- A real held writer lock verifies finite contention retry without duplicate
+  ingestion; non-busy errors and exhausted retries propagate explicitly.
 - Sentinel identifiers are absent from public results, CLI output, database
   files and SQLite sidecars; payload-like objects are rejected.
 

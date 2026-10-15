@@ -9,7 +9,11 @@ Live settlement is a single conditional update. State counts use a read
 transaction so their snapshot is consistent while other connections write.
 
 WAL supports concurrent local readers with one active writer. Busy waits are
-bounded to at most five seconds. Do not put the database on a network
+bounded to at most five seconds. Existing ledgers do not take a writer lock
+just to load settings. The opt-in `withBusyRetry` helper yields between finite
+retries on lock contention; the worker fixture uses a short per-call busy wait
+and bounded backoff. No retry wraps an external business effect.
+Do not put the database on a network
 filesystem or assume multi-host coordination. Write-heavy use is limited by
 SQLite's single-writer model and the host storage.
 

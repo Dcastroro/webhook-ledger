@@ -14,7 +14,7 @@ const run = (path, mode, id) => new Promise((resolve, reject) => {
   child.stderr.resume();
   child.on('error', reject);
   child.on('close', code => {
-    try { assert.equal(code, 0); resolve(JSON.parse(stdout)); } catch (error) { reject(error); }
+    try { const result = JSON.parse(stdout); assert.equal(code, 0, `Worker failed: ${result.error ?? 'unknown'} at ${result.phase ?? 'unknown'}`); resolve(result); } catch (error) { reject(error); }
   });
 });
 function fixture(t, options) {
