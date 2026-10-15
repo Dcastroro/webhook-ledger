@@ -1,0 +1,21 @@
+{
+  "name": "webhook-ledger",
+  "version": "0.1.0",
+  "description": "A local SQLite receipt ledger for webhook deduplication, atomic leases and bounded retries, without storing event payloads.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "David Castro",
+  "engines": { "node": ">=24.14" },
+  "bin": { "webhook-ledger": "bin/webhook-ledger.mjs" },
+  "exports": "./src/ledger.mjs",
+  "repository": { "type": "git", "url": "git+https://github.com/Dcastroro/webhook-ledger.git" },
+  "homepage": "https://github.com/Dcastroro/webhook-ledger#readme",
+  "bugs": { "url": "https://github.com/Dcastroro/webhook-ledger/issues" },
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check.mjs",
+    "demo": "node examples/lifecycle.mjs"
+  },
+  "keywords": ["webhooks", "idempotency", "sqlite", "automation", "developer-tools", "leases"]
+}
